@@ -20,7 +20,7 @@ let rec show = function
         (show e1)
         (show e2)
   | EZero ->
-    "0"
+    "EZero"
   | ESucc e ->
     Printf.sprintf "(Succ %s)" (show e)
   | EPred e ->
@@ -28,61 +28,82 @@ let rec show = function
   | EIsZero e ->
      Printf.sprintf "(IsZero %s)" (show e)
 
-exception Stuck of string * string
+exception Stuck of expr
 
-let rec eval_num = function
-  | EIf (cond, e1, e2) ->
-        if eval_bool cond then
-          eval_num e1
-        else
-          eval_num e2
+let rec is_num_val = function
   | EZero ->
-        0
-  | EPred (ESucc n) ->
-        eval_num n
-  | ESucc n ->
-        (eval_num n) + 1
-  | (ETrue | EFalse | EPred _ | EIsZero _) as e ->
-        raise (Stuck ("eval_num", (show e)))
-
-and eval_bool = function
-  | ETrue ->
     true
-  | EFalse ->
+  | ESucc n ->
+    is_num_val n
+  | _ ->
     false
-  | EIf(ETrue, e1, _e2) ->
-        eval_bool e1
-  | EIf(EFalse, _e1, e2) ->
-        eval_bool e2
-  | EIf(cond, e1, e2) ->
-        if eval_bool cond then
-          eval_bool e1
-        else
-          eval_bool e2
-  | EIsZero e ->
-        if eval_num e = 0 then true else false
-  | (EZero | ESucc _ | EPred _) as e ->
-        raise (Stuck ("eval_bool", (show e)))
+
+let is_value = function
+    | ETrue | EFalse -> true
+    | _ as e -> is_num_val e
+
+let rec eval e = match e with
+  (*B-VALUE*)
+  | v when is_value v ->
+    v
+  | EIf (t1, t2, t3) ->
+    begin match eval t1 with
+    (*B-IFTRUE*)
+    | ETrue ->
+      eval t2
+    (*B-IFFALSE*)
+    | EFalse ->
+      eval t3
+    | _ -> raise (Stuck e)
+    end
+  (*B-Succ*)
+  | ESucc n ->
+    let nv = eval n in
+    if is_num_val nv then
+      ESucc nv
+    else
+      raise (Stuck e)
+  | EPred t1 ->
+    begin match eval t1 with
+    (*B-PREDZERO*)
+    | EZero ->
+        EZero
+    (*B-PREDSUCC*)
+    | ESucc nv1 when is_num_val nv1 ->
+        nv1
+    | _ ->
+      raise (Stuck e)
+    end
+  | EIsZero t1 ->
+    begin match eval t1 with
+    (*B-ISZEROZERO*)
+    | EZero ->
+        ETrue
+    | ESucc nv1 when is_num_val nv1 ->
+        EFalse
+    | _ -> raise (Stuck e)
+    end
+  | _ ->
+    raise (Stuck e)
 
 let test e expected =
-  let res = eval_num e in 
+  let res = eval e in 
   if res = expected then
-      Printf.printf "pass %s evaluates to %d\n" (show e) (eval_num e)
+      Printf.printf "pass %s evaluates to %s\n" (show e) (show (eval e))
   else
-      Printf.printf "FAIL %s: expected %d but got %d\n" (show e) expected res
+      Printf.printf "FAIL %s: expected %s but got %s\n" (show e) (show expected) (show res)
 
 let test_fail e =
-  match eval_num e with
-    | exception Stuck(where, what) ->
-          Printf.printf "pass %s gets stuck: %s %s\n" (show e) where what
+  match eval e with
+    | exception Stuck stuck ->
+          Printf.printf "pass %s gets stuck: %s\n" (show e) (show stuck)
     | value ->
-      Printf.printf "FAIL expected Stuck exception but got %d\n" value
+      Printf.printf "FAIL expected Stuck exception but got %s\n" (show value)
 
 let _ =
-  test EZero 0;
-  test (ESucc EZero) 1;
-  test (EPred (ESucc (ESucc EZero))) 1;
-  test (EIf ((EIsZero (EPred (ESucc EZero))), EZero, ETrue)) 0;
-  test_fail (EIf ((EIsZero (EPred (EPred EZero))), EZero, ETrue));
-  test_fail (EIf ((EIsZero (ESucc EZero)), EZero, ETrue));
-
+  test EZero EZero;
+  test (ESucc EZero) (ESucc EZero);
+  test (EPred (ESucc (ESucc EZero))) (ESucc EZero);
+  test (EIf ((EIsZero (EPred (ESucc EZero))), EZero, ETrue)) EZero;
+  test_fail (EIf ((EIsZero (EPred (EPred ETrue))), EZero, ETrue));
+  test_fail (EIf ((EIsZero (ESucc ETrue)), EZero, ETrue));
