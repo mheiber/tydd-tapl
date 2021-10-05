@@ -9,18 +9,6 @@ type expr =
   | EPred of expr
   | EIsZero of expr
 
-
-let rec is_number = function
-  | EZero -> true
-  | ESucc e -> is_number e
-  | _ -> false
-
-let rec is_val = function
-  | ETrue | EFalse | EZero ->
-    true
-  | EIf _ | ESucc _  | EPred _ | EIsZero _ ->
-    false
-
 let rec show = function
   | ETrue ->
      "true"
@@ -39,8 +27,6 @@ let rec show = function
     Printf.sprintf "(Pred %s)" (show e)
   | EIsZero e ->
      Printf.sprintf "(IsZero %s)" (show e)
-
-
 
 exception Stuck of string * string
 
