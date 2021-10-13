@@ -1,29 +1,25 @@
 
+
 ## Chapter 1
 
- Any reactions to "What Type Systems are Good For"?
+Discussion Question:
+- Why are there so many chapters on *untyped* languages before
+we get to talk about types? (Pierce has good reasons for this)
+
+Summary of Pierce on "What Type Systems are Good For":
 - Detecting errors
 - Abstraction
 - Documentation
 - Language Safety: "A safe language is one that protects its own abstractions" p6
 
+<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+
 On the limits of type systems, page 3
-<!-- ![](./limits.png) -->
+!-- ![](./limits.png) -->
 
 
 
-<br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
-<br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
-<br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
-<br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
-
-
-
-
-
-
-
-
+<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
 
 
 
@@ -48,7 +44,7 @@ On the limits of type systems, page 3
 if <complex test>:
     return 5
 else:
-    // incorrect types:
+    # incorrect types:
     return true * 5
 ```
 
@@ -61,7 +57,7 @@ else:
 ### p31 3.3.4
 ![](./induction-question.png)
 
-<!-- ![](./induction.png) -->
+![](./induction.png)
 
 
 <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
@@ -80,6 +76,20 @@ p39
 
 - theorem 3.5.8 is that every expr in normal form is a value
 - theorem 3.5.11 is uniqueness of normal forms
+
+if t->* u and t ->* u' and u and u' are both normal forms then u = u'
+
+
+t = if true then true else false
+
+true
+---------------EIFTrue
+t = if true then true else false
+
+false
+---------------EFunny1
+t = if true then true else false
+
 
 Which properties hold if we add E-Funny1?
 
@@ -108,6 +118,11 @@ t1 -> t1'
 if t1 then v2 else v3 -> if t1' then v2 else v3
 
 ```
+
+<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
 
 Big step:
 (does this really express order of evaluation?)
