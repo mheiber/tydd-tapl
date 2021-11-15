@@ -17,6 +17,7 @@ type expr =
   | EAbs of string * ty * expr
   | EApp of expr * expr
   | ESeq of expr * expr
+  | EAs of expr * ty
 
 exception Type_Mismatch of (*expected*) ty * (*got*) ty
 exception Expected_Fun_Type of (*got*) ty
@@ -37,10 +38,12 @@ let e_children = function
     [e1; e2]
   | ESeq(e1, e2) ->
     [e1; e2]
+  | EAs(e, _ty) ->
+    [e]
 
 let validate_no_shadow e =
   let rec aux vars e = match e with
-  | EUnit | ETrue | EFalse | EIf _ | EVar _ | EApp _ | ESeq _ ->
+  | EUnit | ETrue | EFalse | EIf _ | EVar _ | EApp _ | ESeq _ | EAs _ ->
     List.iter (aux vars) (e_children e)
   | EAbs(x, _ty, _e) when Vars.mem x vars ->
     raise (Shadowed x)
@@ -87,6 +90,12 @@ let type_of e =
    | ESeq(e1, e2) ->
       let _ = aux ctx e1 in
       aux ctx e2
+    | EAs(e, expected_ty) ->
+      let actual_ty = aux ctx e in
+      if expected_ty != actual_ty then
+          raise (Type_Mismatch(expected_ty, actual_ty))
+      else
+        expected_ty
   in
   validate_no_shadow e;
   aux Ctx.empty e
@@ -102,6 +111,12 @@ let check_fails_shadow e x =
     | exception (Shadowed x') when x = x' -> ()
     | ty -> failwith (Printf.sprintf "expected exception for shadowing, got %s" (show_ty ty))
 
+let check_fails_ty_mismatch e =
+  match type_of e with
+    | exception (Type_Mismatch(_expected, _got)) -> ()
+    | ty -> failwith (Printf.sprintf "expected exception for type mismatch, got %s" (show_ty ty))
+
+
 let _ =
   assert_ty ETrue TyBool;
   assert_ty (EIf(ETrue, ETrue, ETrue)) TyBool;
@@ -111,3 +126,5 @@ let _ =
   check_fails_shadow (app (app use)) "f";
   assert_ty EUnit TyUnit;
   assert_ty (ESeq(EUnit, ETrue)) TyBool;
+  assert_ty (EAs(ETrue, TyBool)) TyBool;
+  check_fails_ty_mismatch (EAs(ETrue, TyUnit));
