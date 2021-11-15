@@ -6,35 +6,41 @@ module Vars = Set.Make(String)
 type ty =
   | TyBool
   | TyArr of ty * ty
+  | TyUnit
 
 type expr =
+  | EUnit
   | ETrue
   | EFalse
   | EIf of expr * expr * expr
   | EVar of string
   | EAbs of string * ty * expr
   | EApp of expr * expr
+  | ESeq of expr * expr
 
 exception Type_Mismatch of (*expected*) ty * (*got*) ty
 exception Expected_Fun_Type of (*got*) ty
 exception Shadowed of string
 
 let rec show_ty = function
+  | TyUnit -> "unit"
   | TyBool -> "bool"
   | TyArr (e1, e2) -> Printf.sprintf "(%s -> %s)" (show_ty e1) (show_ty e2)
 
 let e_children = function
-  | ETrue | EFalse | EVar _ -> []
+  | EUnit | ETrue | EFalse | EVar _ -> []
   | EIf (e1, e2, e3) ->
     [e1; e2; e3]
   | EAbs(_, _, e) ->
     [e]
   | EApp(e1, e2) ->
     [e1; e2]
+  | ESeq(e1, e2) ->
+    [e1; e2]
 
 let validate_no_shadow e =
   let rec aux vars e = match e with
-  | ETrue | EFalse | EIf _ | EVar _ | EApp _ ->
+  | EUnit | ETrue | EFalse | EIf _ | EVar _ | EApp _ | ESeq _ ->
     List.iter (aux vars) (e_children e)
   | EAbs(x, _ty, _e) when Vars.mem x vars ->
     raise (Shadowed x)
@@ -46,6 +52,8 @@ let validate_no_shadow e =
 
 let type_of e =
   let rec aux ctx = function
+  | EUnit ->
+    TyUnit
   | ETrue | EFalse ->
     TyBool
   | EIf(cond, branch1, branch2) ->
@@ -76,7 +84,9 @@ let type_of e =
      | other ->
           raise (Expected_Fun_Type(other))
      end
-
+   | ESeq(e1, e2) ->
+      let _ = aux ctx e1 in
+      aux ctx e2
   in
   validate_no_shadow e;
   aux Ctx.empty e
@@ -99,3 +109,5 @@ let _ =
   let use = (EApp(EVar"f", ETrue)) in
   assert_ty (app use) TyBool;
   check_fails_shadow (app (app use)) "f";
+  assert_ty EUnit TyUnit;
+  assert_ty (ESeq(EUnit, ETrue)) TyBool;
