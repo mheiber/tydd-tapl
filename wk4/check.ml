@@ -18,6 +18,7 @@ type expr =
   | EApp of expr * expr
   | ESeq of expr * expr
   | EAs of expr * ty
+  | ELet of string * expr * expr
 
 exception Type_Mismatch of (*expected*) ty * (*got*) ty
 exception Expected_Fun_Type of (*got*) ty
@@ -40,6 +41,8 @@ let e_children = function
     [e1; e2]
   | EAs(e, _ty) ->
     [e]
+  | ELet(x, e1, e2) ->
+    [e1; e2]
 
 let validate_no_shadow e =
   let rec aux vars e = match e with
@@ -50,6 +53,10 @@ let validate_no_shadow e =
   | EAbs(x, _ty, e) ->
     let vars = Vars.add x vars in
     aux vars e;
+  | ELet(x, e1, e2) ->
+    aux vars e1;
+    let vars = Vars.add x vars in
+    aux vars e2
   in
   aux Vars.empty e
 
@@ -96,6 +103,10 @@ let type_of e =
           raise (Type_Mismatch(expected_ty, actual_ty))
       else
         expected_ty
+    | ELet(x, e1, e2) ->
+      let ty = aux ctx e1 in
+      let ctx = Ctx.add x ty ctx in
+      aux ctx e2
   in
   validate_no_shadow e;
   aux Ctx.empty e
@@ -128,3 +139,4 @@ let _ =
   assert_ty (ESeq(EUnit, ETrue)) TyBool;
   assert_ty (EAs(ETrue, TyBool)) TyBool;
   check_fails_ty_mismatch (EAs(ETrue, TyUnit));
+  assert_ty (ELet("x", ETrue, EVar"x")) TyBool;
